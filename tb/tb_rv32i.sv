@@ -1,24 +1,32 @@
 `timescale 1ns / 1ps
 
-module tb_rv32i();
+module tb_rv32i(); 
 
-logic          clk_i = 1               ;
+logic          clk_i = 1'b1            ;
 logic          rst_i                   ;
+
+logic [31:0]   imem_request_pc_o       ;
+logic [31:0]   imem_response_pc_i      ;
+logic [31:0]   imem_response_instr_i   ;
 
 logic          br_taken_i     = 1'b0   ;
 logic [31:0]   br_tgt_addr_i  = 1'b0   ;
 
-logic [31:0]   decode_instr_o          ;
-logic [31:0]   decode_pc_o             ;
-logic          decode_ready_i = 1'b1   ;
+logic [12:0]   exec_ctrl_signal_o      ;
+logic [31:0]   exec_operand1_o         ;
+logic [31:0]   exec_operand2_o         ;
+logic [31:0]   exec_rs2_o              ;
+logic [ 4:0]   exec_rd_addr_o          ;
+logic [31:0]   exec_pc_o               ;
+logic          exec_flush_i = 1'b0     ;
+logic          exec_ready_i = 1'b1     ;
 
-logic [31:0]   imem_request_pc_o       ;
+wire [ 4:0]    wb_rd_addr_i = 5'b0     ;
+wire [31:0]    wb_rd_i      = 32'b0    ;
+wire           wb_rd_en_i   = 1'b0     ;
 
 
-logic [31:0]   imem_response_pc_i      ;
-logic [31:0]   imem_response_instr_i   ;
 
-// // 
 
 // Emulating 2048 Bytes (2 KBs) Instruction Memory
 reg [31:0] IMem [63:0] ;
@@ -42,22 +50,6 @@ initial begin
    rst_i = 1 ; 
    #17
    rst_i = 0 ; 
-
-   #50
-
-   br_taken_i     = 1'b1 ;
-   br_tgt_addr_i  = 32'h00_00_00_04 ;
-   #10
-
-   br_taken_i     = 1'b0   ;
-   br_tgt_addr_i  = 1'b0   ;
-
-   #30
-
-   decode_ready_i = 1'b0  ;
-   #30
-
-   decode_ready_i = 1'b1  ;
 
    #150
    $stop;
