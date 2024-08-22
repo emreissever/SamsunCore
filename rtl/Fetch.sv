@@ -17,6 +17,7 @@ module Fetch
    // Decode Stage Interface
    output   logic [31:0]   decode_instr_o          ,
    output   logic [31:0]   decode_pc_o             ,
+   output   logic [31:0]   decode_pcplus_o         ,
    input    logic          decode_ready_i          ,
 
    // Execute Stage Interface 
@@ -51,12 +52,15 @@ always_ff @(posedge clk_i) begin : Pipelining_Payload
    if (rst_i) begin
       decode_instr_o    <= `I_NOP                  ;
       decode_pc_o       <= `BOOT_ADDR              ;
+      decode_pcplus_o   <= 32'b0                   ;
    end else if (br_taken_i && ~rst_flag) begin
       decode_instr_o    <= `I_NOP                  ;
       decode_pc_o       <= br_tgt_addr_i           ;
+      decode_pcplus_o   <= 32'b0                   ;
    end else if (decode_ready_i && ~rst_flag) begin
       decode_instr_o    <= imem_response_instr_i   ;
       decode_pc_o       <= imem_response_pc_i      ;
+      decode_pcplus_o   <= pc_plus                 ;
    end
 end
 

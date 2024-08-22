@@ -3,34 +3,37 @@
 
 module Decode
 (
-   input    logic          clk_i                ,
-   input    logic          rst_i                ,
+   input    logic                      clk_i                ,
+   input    logic                      rst_i                ,
 
    // Fetch Stage Interface
-   input    logic [31:0]   ftch_instr_i         ,
-   input    logic [31:0]   ftch_pc_i            ,
-   output   logic          ftch_ready_o         ,
+   input    logic [31:0]               ftch_instr_i         ,
+   input    logic [31:0]               ftch_pc_i            ,
+   input    logic [31:0]               ftch_pcplus_i        ,
+   output   logic                      ftch_ready_o         ,
 
    // Execute Stage Interface
-   output   logic [12:0]   exec_ctrl_signal_o   , 
-   output   logic [31:0]   exec_operand1_o      , 
-   output   logic [31:0]   exec_operand2_o      , 
-   output   logic [31:0]   exec_rs2_o           ,
+   output   logic [31:0]               exec_instr_o         ,
+   output   logic [`CONTROL_BIT-1:0]   exec_ctrl_signal_o   ,
+   output   logic [31:0]               exec_rs1_o           ,
+   output   logic [31:0]               exec_rs2_o           ,
+   output   logic [31:0]               exec_immediate_o     ,
 
-   output   logic [ 4:0]   exec_rd_addr_o       ,
-   output   logic [31:0]   exec_pc_o            ,
+   output   logic [ 4:0]               exec_rd_addr_o       ,
+   output   logic [31:0]               exec_pc_o            ,
+   output   logic [31:0]               exec_pcplus_o        ,
 
-   input    logic          exec_flush_i         ,
-   input    logic          exec_ready_i         ,
+   input    logic                      exec_flush_i         ,
+   input    logic                      exec_ready_i         ,
 
    // Write-Back Stage Interface
-   input    wire [ 4:0]    wb_rd_addr_i         ,
-   input    wire [31:0]    wb_rd_i              ,
-   input    wire           wb_rd_en_i           
+   input    wire [ 4:0]                wb_rd_addr_i         ,
+   input    wire [31:0]                wb_rd_i              ,
+   input    wire                       wb_rd_en_i           
 );
 
-reg [31:0]  immediate_r;
-reg [2:0]   instruction_type_r ; 
+reg [31:0]  immediate_r ;
+reg [2:0]   instruction_type_r ;
 
 wire [31:0] rs1_w ;
 wire [31:0] rs2_w ;
@@ -99,14 +102,6 @@ always @(*) begin
    endcase
 end
 
-// Selecting Operand
-
-wire [31:0] operand1_w ;
-assign operand1_w =  ( (ctrl_signal_r[`OPERAND] == `OPERAND_PC)    || (ctrl_signal_r[`OPERAND] == `OPERAND_PCIMM) ) ? ftch_pc_i   : rs1_w ; 
-
-wire [31:0] operand2_w ;
-assign operand2_w =  ( (ctrl_signal_r[`OPERAND] == `OPERAND_IMM)   || (ctrl_signal_r[`OPERAND] == `OPERAND_PCIMM) ) ? immediate_r : rs2_w ; 
-
 // IMMEDIATE GENERATOR
 
 /* Instruciton[6:2]
@@ -144,39 +139,44 @@ always_comb begin
    endcase
 end
 
-// SYNCHRONOUS LOGIC TO PIPELINING PAYLOAD // 
+// SYNCHRONOUS LOGIC TO PIPELINING PAYLOAD //
+
 always_ff @(posedge clk_i) begin
    if (rst_i) begin
-      exec_ctrl_signal_o   <= `CONTORL_NOP_TOEXECUTE  ;
+      exec_instr_o         <= `I_NOP                  ;
+      exec_ctrl_signal_o   <= `CONTROL_NOP            ;
       exec_pc_o            <= `BOOT_ADDR              ;
-      exec_rd_addr_o       <= 5'b0                    ; 
-      exec_operand1_o      <= 32'b0                   ; 
-      exec_operand2_o      <= 32'b0                   ; 
+      exec_pcplus_o        <= 32'b0                   ;
+      exec_rd_addr_o       <= 5'b0                    ;
+      exec_rs1_o           <= 32'b0                   ;
       exec_rs2_o           <= 32'b0                   ;
+      exec_immediate_o     <= 32'b0                   ;
    end
-   else if (exec_flush_i) begin 
-      exec_ctrl_signal_o   <= `CONTORL_NOP_TOEXECUTE  ;
+   else if (exec_flush_i) begin
+      exec_instr_o         <= `I_NOP                  ;
+      exec_ctrl_signal_o   <= `CONTROL_NOP            ;
       exec_pc_o            <= `BOOT_ADDR              ;
-      exec_rd_addr_o       <= 5'b0                    ; 
-      exec_operand1_o      <= 32'b0                   ; 
-      exec_operand2_o      <= 32'b0                   ; 
+      exec_pcplus_o        <= 32'b0                   ;
+      exec_rd_addr_o       <= 5'b0                    ;
+      exec_rs1_o           <= 32'b0                   ;
       exec_rs2_o           <= 32'b0                   ;
+      exec_immediate_o     <= 32'b0                   ;
    end
    else if(exec_ready_i) begin
-      exec_ctrl_signal_o   <= ctrl_signal_r[12:0]  ; 
-      exec_pc_o            <= ftch_pc_i            ;
-      exec_rd_addr_o       <= ftch_instr_i[11:7]   ;
-      exec_operand1_o      <= operand1_w           ;
-      exec_operand2_o      <= operand2_w           ;
-      exec_rs2_o           <= rs2_w                ;
+      exec_instr_o         <= ftch_instr_i            ;
+      exec_ctrl_signal_o   <= ctrl_signal_r           ;
+      exec_pc_o            <= ftch_pc_i               ;
+      exec_pcplus_o        <= ftch_pcplus_i           ;
+      exec_rd_addr_o       <= ftch_instr_i[11:7]      ;
+      exec_rs1_o           <= rs1_w                   ;
+      exec_rs2_o           <= rs2_w                   ;
+      exec_immediate_o     <= immediate_r             ;
    end
 end
 
 assign ftch_ready_o = exec_ready_i ;
 
-
 // DEBUGGING // 
-
 `ifdef DEBUG
    reg[13*8:0] debug_reg ;
    always_comb begin
@@ -218,7 +218,7 @@ assign ftch_ready_o = exec_ready_i ;
          `DECODE_AUIPC  : begin debug_reg = "`CONTROL_AUIPC"  ; end 
          `DECODE_JAL    : begin debug_reg = "`CONTROL_JAL  "  ; end 
          `DECODE_JALR   : begin debug_reg = "`CONTROL_JALR "  ; end 
-         default        : begin debug_reg = "`UNDEFINED     "  ; end // Bilinmeyen Instruction - Jump to Exception Handler (Handle)
+         default        : begin debug_reg = "`UNDEFINED    "  ; end // Bilinmeyen Instruction - Jump to Exception Handler (Handle)
       endcase
    end
 `endif
