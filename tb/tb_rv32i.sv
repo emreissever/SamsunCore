@@ -9,18 +9,10 @@ logic [31:0]               imem_request_pc_o       ;
 logic [31:0]               imem_response_pc_i      ;
 logic [31:0]               imem_response_instr_i   ;
 
-wire [ 4:0]                wb_rd_addr_i = 5'b0     ;
-wire [31:0]                wb_rd_i      = 32'b0    ;
-wire                       wb_rd_en_i   = 1'b0     ;
-
-logic [`CONTROL_BIT-1:0]   mem_control_o           ;
-logic [31:0]               mem_aluResult_o         ;
-logic [31:0]               mem_data_o              ;
-
-logic [31:0]               mem_rd_addr_o           ;
-logic [31:0]               mem_pcplus_o            ;
-
-wire                       mem_ready_i  = 1'b1     ;
+logic                      dmem_wen_o              ;
+logic [31:0]               dmem_addr_o             ;
+logic [31:0]               dmem_wdata_o            ;
+logic [31:0]               dmem_rdata_i            ;
 
 
 // Emulating 2048 Bytes (2 KBs) Instruction Memory
@@ -37,6 +29,20 @@ initial $readmemh("TestInstructions.mem", IMem);
 
 assign imem_response_instr_i  = IMem[imem_request_pc_o[31:2]] ;
 assign imem_response_pc_i     = imem_request_pc_o ;
+
+
+// Emulating 2048 Bytes (2 KBs) Data Memory
+reg [31:0] DMem[63:0] ;
+
+always_comb begin
+   if (dmem_wen_o) begin
+      DMem[dmem_addr_o[31:2]] = dmem_wdata_o ;
+   end 
+   else begin
+      dmem_rdata_i = DMem[dmem_addr_o[31:2]] ;
+   end 
+end 
+
 
 Samsun_Core Test_RV32I_Fetch (.*);
 

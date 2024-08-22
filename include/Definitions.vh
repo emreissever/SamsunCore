@@ -117,7 +117,7 @@
 `define WB        1:0   // 2 Bit
 `define REGEN     2:2   // 1 Bit
 `define MEMACC    7:3   // 5 Bit
-`define EXECOP     11:8  // 4 Bit
+`define EXECOP    11:8  // 4 Bit
 `define BRANCH    14:12 // 3 Bit
 `define OPERAND   16:15 // 2 Bit
 

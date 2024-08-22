@@ -48,7 +48,7 @@ Base_RegFile RegFile_Decode
    .rs2_o       (rs2_w)                ,
    .rd_addr_i   (wb_rd_addr_i)         ,
    .rd_i        (wb_rd_i)              ,
-   .wr_i        (wb_rd_writeEnable_i)
+   .wr_i        (wb_rd_en_i)
 );
 
 // INSTRUCTION DECODING 

@@ -21,7 +21,8 @@ module Execute
 
    output   logic                      decode_ready_o          ,
 
-   // Memory Stage Interface  
+   // Memory Stage Interface
+   output   logic [31:0]               mem_instr_o             ,
    output   logic [`CONTROL_BIT-1:0]   mem_control_o           ,
    output   logic [31:0]               mem_aluResult_o         ,
    output   logic [31:0]               mem_data_o              ,
@@ -66,6 +67,7 @@ end
 
 always_ff @(posedge clk_i) begin 
    if (rst_i) begin
+      mem_instr_o       <= `I_NOP                  ;
       mem_control_o     <= `CONTROL_NOP            ;
       mem_aluResult_o   <= 32'b0                   ;
       mem_data_o        <= 32'b0                   ;
@@ -73,11 +75,12 @@ always_ff @(posedge clk_i) begin
       mem_pcplus_o      <= 32'b0                   ;
    end 
    else if (mem_ready_i) begin
+      mem_instr_o       <= decode_instr_i          ;
       mem_control_o     <= decode_control_i        ;
       mem_aluResult_o   <= alu_result_w            ;
       mem_data_o        <= decode_rs2_i            ;
       mem_rd_addr_o     <= decode_rd_addr_i        ;
-      mem_pcplus_o      <= decode_pcplus_i         ; 
+      mem_pcplus_o      <= decode_pcplus_i         ;
    end
 end
 
