@@ -30,7 +30,9 @@ module Execute
    output   logic [31:0]               mem_rd_addr_o           ,
    output   logic [31:0]               mem_pcplus_o            ,
 
-   input    logic                      mem_ready_i             
+   input    logic                      mem_ready_i             ,
+
+   output   logic                      monitor_load_o          
 );
 
 wire [31:0] alu_result_w ;
@@ -63,6 +65,8 @@ always_comb begin
    endcase
 end
 
+assign monitor_load_o =  decode_control_i[6];
+
 // SYNCHRONOUS LOGIC TO PIPELINING PAYLOAD //
 
 always_ff @(posedge clk_i) begin 
@@ -74,7 +78,7 @@ always_ff @(posedge clk_i) begin
       mem_rd_addr_o     <= 5'b0                    ;
       mem_pcplus_o      <= 32'b0                   ;
    end 
-   else if (mem_ready_i) begin
+   else if (1'b1) begin
       mem_instr_o       <= decode_instr_i          ;
       mem_control_o     <= decode_control_i        ;
       mem_aluResult_o   <= alu_result_w            ;

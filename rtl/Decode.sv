@@ -23,14 +23,21 @@ module Decode
    output   logic [31:0]               exec_pc_o            ,
    output   logic [31:0]               exec_pcplus_o        ,
 
-   input    logic                      exec_flush_i         ,
-   input    logic                      exec_ready_i         ,
+   input    logic                      stall_i              ,
+   input    logic                      flush_i              ,
+   input    logic                      exec_br_taken_i      ,
 
    // Write-Back Stage Interface
-   input    wire [ 4:0]                wb_rd_addr_i         ,
-   input    wire [31:0]                wb_rd_i              ,
-   input    wire                       wb_rd_en_i           
+   input    wire  [ 4:0]               wb_rd_addr_i         ,
+   input    wire  [31:0]               wb_rd_i              ,
+   input    wire                       wb_rd_en_i           ,
+
+   // Monitoring for Hazard
+   output   logic [4:0]                monitor_rs1_addr_o   ,
+   output   logic [4:0]                monitor_rs2_addr_o   
 );
+
+logic       flush ; 
 
 reg [31:0]  immediate_r ;
 reg [2:0]   instruction_type_r ;
@@ -130,14 +137,16 @@ always_comb begin
    endcase
 
    case (instruction_type_r)
-      `I_TYPE  : begin immediate_r = { {21{ftch_instr_i[31]}}, ftch_instr_i[30:25], ftch_instr_i[24:21], ftch_instr_i[20]                                    }; end 
-      `S_TYPE  : begin immediate_r = { {21{ftch_instr_i[31]}}, ftch_instr_i[30:25], ftch_instr_i[11:8] , ftch_instr_i[7]                                     }; end 
-      `B_TYPE  : begin immediate_r = { {20{ftch_instr_i[31]}}, ftch_instr_i[7]    , ftch_instr_i[30:25], ftch_instr_i[11:8], {1{1'b0}}                       }; end 
-      `U_TYPE  : begin immediate_r = {     ftch_instr_i[31]  , ftch_instr_i[30:20], ftch_instr_i[19:12], {12{1'b0}}                                         }; end 
-      `J_TYPE  : begin immediate_r = { {12{ftch_instr_i[31]}}, ftch_instr_i[19:12], ftch_instr_i[20]   , ftch_instr_i[30:25], ftch_instr_i[24:21], {1{1'b0}}  }; end 
+      `I_TYPE  : begin immediate_r = { {21{ftch_instr_i[31]}}, ftch_instr_i[30:25], ftch_instr_i[24:21], ftch_instr_i[20]                                      }; end 
+      `S_TYPE  : begin immediate_r = { {21{ftch_instr_i[31]}}, ftch_instr_i[30:25], ftch_instr_i[11:8] , ftch_instr_i[7]                                       }; end 
+      `B_TYPE  : begin immediate_r = { {20{ftch_instr_i[31]}}, ftch_instr_i[7]    , ftch_instr_i[30:25], ftch_instr_i[11:8], {1{1'b0}}                         }; end 
+      `U_TYPE  : begin immediate_r = {     ftch_instr_i[31]  , ftch_instr_i[30:20], ftch_instr_i[19:12], {12{1'b0}}                                            }; end 
+      `J_TYPE  : begin immediate_r = { {12{ftch_instr_i[31]}}, ftch_instr_i[19:12], ftch_instr_i[20]   , ftch_instr_i[30:25], ftch_instr_i[24:21], {1{1'b0}}   }; end 
       default  : begin immediate_r = 32'hZZZZZZZZ; end
    endcase
 end
+
+assign flush = exec_br_taken_i | flush_i ; 
 
 // SYNCHRONOUS LOGIC TO PIPELINING PAYLOAD //
 
@@ -152,7 +161,7 @@ always_ff @(posedge clk_i) begin
       exec_rs2_o           <= 32'b0                   ;
       exec_immediate_o     <= 32'b0                   ;
    end
-   else if (exec_flush_i) begin
+   else if (flush) begin
       exec_instr_o         <= `I_NOP                  ;
       exec_ctrl_signal_o   <= `CONTROL_NOP            ;
       exec_pc_o            <= `BOOT_ADDR              ;
@@ -162,7 +171,7 @@ always_ff @(posedge clk_i) begin
       exec_rs2_o           <= 32'b0                   ;
       exec_immediate_o     <= 32'b0                   ;
    end
-   else if(exec_ready_i) begin
+   else if(~stall_i) begin
       exec_instr_o         <= ftch_instr_i            ;
       exec_ctrl_signal_o   <= ctrl_signal_r           ;
       exec_pc_o            <= ftch_pc_i               ;
@@ -174,7 +183,11 @@ always_ff @(posedge clk_i) begin
    end
 end
 
-assign ftch_ready_o = exec_ready_i ;
+//assign ftch_ready_o = exec_ready_i ;
+
+assign monitor_rs1_addr_o = ftch_instr_i[19:15] ;
+assign monitor_rs2_addr_o = ftch_instr_i[24:20] ;
+
 
 // DEBUGGING // 
 `ifdef DEBUG

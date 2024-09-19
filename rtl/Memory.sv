@@ -31,9 +31,9 @@ module Memory
    input    logic [31:0]               dmem_rdata_i            
 );
 
-assign dmem_wen   = exec_control_i[7] ? exec_control_i[6] : 1'b0  ;
-assign dmem_addr  = exec_aluResult_i                              ;
-assign dmem_wdata = exec_data_i                                   ; 
+assign dmem_wen_o   = exec_control_i[7] ? exec_control_i[6] : 1'b0  ;
+assign dmem_addr_o  = exec_aluResult_i                              ;
+assign dmem_wdata_o = exec_data_i                                   ; 
 
 // SYNCHRONOUS LOGIC TO PIPELINING PAYLOAD //
 
@@ -46,7 +46,7 @@ always_ff @(posedge clk_i) begin
       wb_rd_addr_o   <= 5'b0              ;
       wb_pcplus_o    <= 32'b0             ;
    end 
-   else if (wb_ready_i) begin
+   else if (1'b1) begin
       wb_instr_o     <= exec_instr_i      ;
       wb_control_o   <= exec_control_i    ;
       wb_aluResult_o <= exec_aluResult_i  ;

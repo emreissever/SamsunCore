@@ -9,11 +9,11 @@ module ALU (
    output   wire [31:0] result_o    
 );
 
-wire [31:0] result_xor_w   ; 
-wire [31:0] result_or_w    ; 
-wire [31:0] result_and_w   ; 
-wire [31:0] result_sll_w   ; 
-wire [31:0] result_srl_w   ; 
+wire [31:0] result_xor_w   ;
+wire [31:0] result_or_w    ;
+wire [31:0] result_and_w   ;
+wire [31:0] result_sll_w   ;
+wire [31:0] result_srl_w   ;
 wire [31:0] result_sra_w   ;
 wire [31:0] result_slt_w   ;
 wire [31:0] result_sltu_w  ;
@@ -39,15 +39,16 @@ wire [32:0] addition_result_w ;
 assign addition_result_w = addition_operand1_w + addition_operand2_w ;
 
 assign result_o =
-(ctrl_i == `EXECOP_ADD ) | (ctrl_i == `EXECOP_SUB ) ? addition_result_w [32:1]  : 
-(ctrl_i == `EXECOP_SLL )                            ? result_sll_w              :
-(ctrl_i == `EXECOP_SLT )                            ? result_slt_w              :
-(ctrl_i == `EXECOP_SLTU)                            ? result_sltu_w             :
-(ctrl_i == `EXECOP_XOR )                            ? result_xor_w              :
-(ctrl_i == `EXECOP_SRL )                            ? result_srl_w              :
-(ctrl_i == `EXECOP_SRA )                            ? result_sra_w              :
-(ctrl_i == `EXECOP_OR  )                            ? result_or_w               :
-(ctrl_i == `EXECOP_AND )                            ? result_and_w              :
+(ctrl_i == `EXECOP_ADD ) | (ctrl_i == `EXECOP_SUB )   ? addition_result_w [32:1] : 
+(ctrl_i == `EXECOP_SLL )                              ? result_sll_w             :
+(ctrl_i == `EXECOP_SLT )                              ? result_slt_w             :
+(ctrl_i == `EXECOP_SLTU)                              ? result_sltu_w            :
+(ctrl_i == `EXECOP_XOR )                              ? result_xor_w             :
+(ctrl_i == `EXECOP_SRL )                              ? result_srl_w             :
+(ctrl_i == `EXECOP_SRA )                              ? result_sra_w             :
+(ctrl_i == `EXECOP_OR  )                              ? result_or_w              :
+(ctrl_i == `EXECOP_AND )                              ? result_and_w             :
+(ctrl_i == `EXECOP_SEQ )                              ? result_seq_w             :
 32'bZ ;
 
 endmodule
